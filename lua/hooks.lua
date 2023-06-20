@@ -37,8 +37,10 @@ if SERVER then
         -- Roll a chance based on crateChance value
         if math.random(0,100) <= crateChance then
 
+            local spawnPosition = npc:GetPos() + Vector(0,0,10)
+
             local crate = ents.Create("npc_drop_crate")
-            crate:SetPos(npc:GetPos())
+            crate:SetPos(spawnPosition)
             crate:Spawn()
         end
     end)
