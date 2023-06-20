@@ -27,8 +27,6 @@ if SERVER then
 
     hook.Add("Initialize", "InitializeNPCCrateChances", InitializeNPCCrateChances)
 
-    -- Rest of your server-side code...
-
     -- When an NPC is killed, roll a chance to determine if a crate will drop
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
         local npcClass = npc:GetClass()
@@ -45,10 +43,3 @@ if SERVER then
         end
     end)
 end
-
-
-
-
-
-
-
