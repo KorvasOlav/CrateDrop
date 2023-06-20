@@ -59,7 +59,6 @@ local entityTable = {
     "sent_ball",
     "sent_ball",
     "sent_ball",
-    -- Add more entity class names as needed
 }
 
 -- Function to spawn the entity dropped from the crate
