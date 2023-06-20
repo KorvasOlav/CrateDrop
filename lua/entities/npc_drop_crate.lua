@@ -68,9 +68,11 @@ local function SpawnDroppedEntity(position)
     local randomIndex = math.random(1, #entityTable)
     local entityClass = entityTable[randomIndex]
 
+    local spawnPosition = position + Vector(0, 0, 10)
+
     -- Spawn the chosen entity
     local droppedEntity = ents.Create(entityClass)
-    droppedEntity:SetPos(position)
+    droppedEntity:SetPos(spawnPosition)
     droppedEntity:Spawn()
 end
 
