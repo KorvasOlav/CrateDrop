@@ -1,5 +1,12 @@
 include("hooks.lua")
 
+concommand.Add("npcmenu", function(ply)
+        local npcClasses = GetNPCClasses()
+        net.Start("OpenNPCMenu")
+        net.WriteTable(npcClasses)
+        net.Send(ply)
+    end)
+
 if ( SERVER) then
     
     util.AddNetworkString("OpenNPCMenu")
@@ -38,13 +45,6 @@ if ( SERVER) then
 
         crateChances[selectedNPCClass] = newValue
         SaveCrateChances(crateChances)
-    end)
-    
-    concommand.Add("npcmenu", function(ply)
-        local npcClasses = GetNPCClasses()
-        net.Start("OpenNPCMenu")
-        net.WriteTable(npcClasses)
-        net.Send(ply)
     end)
 
     function GetNPCClasses()
