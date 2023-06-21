@@ -96,11 +96,14 @@ end
 function ENT:Use(activator, caller)
     -- Determine the contents of the crate
     local contents = DetermineCrateContents()
-
+    
+    -- and ply.lvl == ply.hard
     if contents == "xp" then
         -- Give XP to the player
         GiveXP(activator)
         self:Remove()
+
+    -- or ply.lvl ~= ply.hard
     elseif contents == "money" then
         -- Give money to the player
         GiveMoney(activator)
