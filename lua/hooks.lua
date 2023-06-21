@@ -27,6 +27,14 @@ if SERVER then
 
     hook.Add("Initialize", "InitializeNPCCrateChances", InitializeNPCCrateChances)
 
+    hook.Add("Initialize", "RegisterNPCSpawnCommand", function()
+        concommand.Add("view_npc_spawn_locations", function(ply, _, _)
+            -- Send the network message to the specific player
+            net.Start("Cratedrop_ViewNPCSpawnLocations")
+            net.Send(ply)
+        end)
+    end)
+
     -- When an NPC is killed, roll a chance to determine if a crate will drop
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
         local npcClass = npc:GetClass()

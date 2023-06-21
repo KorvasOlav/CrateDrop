@@ -243,6 +243,7 @@ if (CLIENT) then
 
             -- Add New Row
             addButtonFrame.DoClick = function()
+                if npcClassList:GetSelected()[1] == nil then return end
                 local npcClass = npcClassList:GetSelected()[1]:GetValue(1)
                 local crateChance = crateChanceTextEntry:GetText()
                 local timeInterval = timeIntervalTextEntry:GetText()
@@ -256,6 +257,13 @@ if (CLIENT) then
                     xPos = math.Round(playerPos.x)
                     yPos = math.Round(playerPos.y)
                     zPos = math.Round(playerPos.z)
+                end
+                if timeInterval == nil or timeInterval == "" then
+                    timeInterval = 600
+                end
+
+                if crateChance == nil or crateChance == "" then
+                    crateChance = npcCrateChances[npcClass]
                 end
 
                 frame:Close()
@@ -271,6 +279,17 @@ if (CLIENT) then
             end
         end
 
+        local function LoadCrateChances()
+            if not file.Exists("crate_chances.txt", "DATA") then
+                return {}
+            end
+    
+            local contents = file.Read("crate_chances.txt", "DATA")
+            return util.JSONToTable(contents) or {}
+        end
+
+        
+        npcCrateChances = LoadCrateChances()
 
         -- Remove Row
         removeButton.DoClick = function()
@@ -349,7 +368,7 @@ if (CLIENT) then
             xPosTextEntry:Dock(TOP)
             xPosTextEntry:DockMargin(10, 0, 10, 5)
             xPosTextEntry:SetText(tostring(npcData.xPos))
-            yPosTextEntry:SetPlaceholderText("X Position")
+            xPosTextEntry:SetPlaceholderText("X Position")
 
             local yPosTextEntry = vgui.Create("DTextEntry", frame)
             yPosTextEntry:Dock(TOP)
@@ -361,7 +380,7 @@ if (CLIENT) then
             zPosTextEntry:Dock(TOP)
             zPosTextEntry:DockMargin(10, 0, 10, 5)
             zPosTextEntry:SetText(tostring(npcData.zPos))
-            yPosTextEntry:SetPlaceholderText("Z Position")
+            zPosTextEntry:SetPlaceholderText("Z Position")
 
             local saveButton = vgui.Create("DButton", frame)
             saveButton:Dock(BOTTOM)
@@ -384,13 +403,27 @@ if (CLIENT) then
                     zPos = npcData.zPos
                 end
 
+                local selectedLine = npcListRespawn:GetSelectedLine()
+                if selectedLine then
+                    npcListRespawn:RemoveLine(selectedLine)
+                    table.remove(npcDataTable, selectedLine)
+
+                    if npcListRespawn:GetLine(selectedLine) then
+                        npcListRespawn:SelectItem(npcListRespawn:GetLine(selectedLine))
+                    end
+
+                    SaveNPCData()
+                end
+
                 frame:Close()
 
                 local positionString = string.format('%.f, %.f, %.f', xPos, yPos, zPos)
-                npcListRespawn:SetLine(selectedLine, uniqueID, npcClass, crateChance, timeInterval, positionString)
-                npcDataTable[selectedLine] = { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos }
+                local line = npcListRespawn:AddLine(uniqueID, npcClass, crateChance, timeInterval, positionString)
+                table.insert(npcDataTable, { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos })
 
                 SaveNPCData()
+
+                
             end
         end
         LoadNPCData()

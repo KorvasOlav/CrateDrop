@@ -7,10 +7,11 @@ concommand.Add("npcmenu", function(ply)
     net.Send(ply)
 end)
 
-if ( SERVER) then
+if ( SERVER ) then
     util.AddNetworkString("OpenNPCMenu")
     util.AddNetworkString("SetNPCCrateChance")
     util.AddNetworkString("GetNPCCrateChance")
+    util.AddNetworkString("Cratedrop_ViewNPCSpawnLocations")
 
     local function LoadCrateChances()
         if not file.Exists("crate_chances.txt", "DATA") then
