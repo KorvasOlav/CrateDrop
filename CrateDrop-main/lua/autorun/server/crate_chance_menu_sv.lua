@@ -1,17 +1,29 @@
 include("hooks.lua")
 
 concommand.Add("npcmenu", function(ply)
-    local npcClasses = GetNPCClasses()
+    -- local npcClasses = GetNPCClasses()
     net.Start("OpenNPCMenu")
-    net.WriteTable(npcClasses)
     net.Send(ply)
 end)
+
+-- function GetNPCClasses()
+--     local npcClasses = {}
+--     for npcClass, npcInfo in pairs(list.Get("NPC")) do
+--         table.insert(npcClasses, {
+--             class = npcClass,
+--             name = npcInfo.Name or npcClass,
+--             category = npcInfo.Category or "Unknown"
+--         })
+--     end
+--     return npcClasses
+-- end
 
 if ( SERVER ) then
     util.AddNetworkString("OpenNPCMenu")
     util.AddNetworkString("SetNPCCrateChance")
     util.AddNetworkString("GetNPCCrateChance")
     util.AddNetworkString("Cratedrop_ViewNPCSpawnLocations")
+    util.AddNetworkString("NPCDataUpdate")
 
     local function LoadCrateChances()
         if not file.Exists("crate_chances.txt", "DATA") then
@@ -47,15 +59,5 @@ if ( SERVER ) then
         SaveCrateChances(crateChances)
     end)
 
-    function GetNPCClasses()
-        local npcClasses = {}
-        for npcClass, npcInfo in pairs(list.Get("NPC")) do
-            table.insert(npcClasses, {
-                class = npcClass,
-                name = npcInfo.Name or npcClass,
-                category = npcInfo.Category or "Unknown"
-            })
-        end
-        return npcClasses
-    end
+    
 end

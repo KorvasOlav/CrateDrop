@@ -2,10 +2,9 @@ if (CLIENT) then
     local textBox -- Define textBox variable outside the scope
 
     net.Receive("OpenNPCMenu", function()
-        local npcClasses = net.ReadTable()  
 
         local frame = vgui.Create("DFrame")
-        frame:SetSize(500, 400)
+        frame:SetSize(600, 400)
         frame:SetTitle("NPC Menu")
         frame:Center()
         frame:MakePopup()
@@ -21,12 +20,13 @@ if (CLIENT) then
 
         local npcList = vgui.Create("DListView", defaultDropChancePanel)
         npcList:Dock(LEFT)
-        npcList:SetWidth(200)
+        npcList:SetWidth(350)
         npcList:SetMultiSelect(false)
         npcList:AddColumn("NPC Name")
 
-        for _, npcData in pairs(npcClasses) do
-            npcList:AddLine(npcData.name)
+        for npcClass, npcInfo in pairs(list.Get("NPC")) do
+            npcList:AddLine(npcClass)
+            
         end
 
         local setButton = vgui.Create("DButton", defaultDropChancePanel)
@@ -99,6 +99,8 @@ if (CLIENT) then
         npcListRespawn:AddColumn("NPC Class")
         npcListRespawn:AddColumn("Crate Chance")
         npcListRespawn:AddColumn("Time Interval")
+        npcListRespawn:AddColumn("XP Reward")
+        npcListRespawn:AddColumn("Money Reward")
         npcListRespawn:AddColumn("Position")
 
         -- Load NPC Data from File
@@ -117,7 +119,7 @@ if (CLIENT) then
         
                         if isnumber(xPos) and isnumber(yPos) and isnumber(zPos) then
                             local positionString = string.format('%.f, %.f, %.f', xPos, yPos, zPos)
-                            npcListRespawn:AddLine(npcData.uniqueID, npcData.npcClass, npcData.crateChance, npcData.timeInterval, positionString)
+                            npcListRespawn:AddLine(npcData.uniqueID, npcData.npcClass, npcData.crateChance, npcData.timeInterval, npcData.xp, npcData.money, positionString)
                         else
                             print("Invalid position values found in NPC data.")
                         end
@@ -162,15 +164,25 @@ if (CLIENT) then
         editButton:SetText("Edit Row")
         editButton:SetEnabled(true)
 
+        local function GetLowestAvailableID()
+            local usedIDs = {}
+            for _, npcData in ipairs(npcDataTable) do
+                usedIDs[npcData.uniqueID] = true
+            end
+        
+            -- Find the lowest available ID
+            local lowestID = 1
+            while usedIDs[lowestID] do
+                lowestID = lowestID + 1
+            end
+            return lowestID
+        end
+
         -- Add New Row
         addButton.DoClick = function()
-            local uniqueID = 1
-            if #npcDataTable > 0 then
-                uniqueID = npcDataTable[#npcDataTable].uniqueID + 1
-            end
 
             local frame = vgui.Create("DFrame")
-            frame:SetSize(350, 500)
+            frame:SetSize(350, 600)
             frame:SetTitle("Add New Row")
             frame:Center()
             frame:MakePopup()
@@ -191,9 +203,9 @@ if (CLIENT) then
             local function populateNPCClassList()
                 npcClassList:Clear()
 
-                for _, npcData in pairs(npcClasses) do
-                    if string.find(string.lower(npcData.class), string.lower(npcClassSearch:GetText()), 1, true) then
-                        npcClassList:AddLine(npcData.class)
+                for npcClass, npcInfo in pairs(list.Get("NPC")) do
+                    if string.find(string.lower(npcClass), string.lower(npcClassSearch:GetText()), 1, true) then
+                        npcClassList:AddLine(npcClass)
                     end
                 end
             end
@@ -206,30 +218,75 @@ if (CLIENT) then
                 populateNPCClassList()
             end
 
+            local crateChanceLabel = vgui.Create("DLabel", frame)
+            crateChanceLabel:Dock(TOP)
+            crateChanceLabel:DockMargin(10,0,10,0)
+            crateChanceLabel:SetText("Crate Chance:")
+
             local crateChanceTextEntry = vgui.Create("DTextEntry", frame)
             crateChanceTextEntry:Dock(TOP)
             crateChanceTextEntry:DockMargin(10, 0, 10, 5)
             crateChanceTextEntry:SetPlaceholderText("Crate Chance")
+
+            local timeIntervalLabel = vgui.Create("DLabel", frame)
+            timeIntervalLabel:Dock(TOP)
+            timeIntervalLabel:DockMargin(10,0,10,0)
+            timeIntervalLabel:SetText("Respawn Interval:")
 
             local timeIntervalTextEntry = vgui.Create("DTextEntry", frame)
             timeIntervalTextEntry:Dock(TOP)
             timeIntervalTextEntry:DockMargin(10, 0, 10, 5)
             timeIntervalTextEntry:SetPlaceholderText("Time Interval")
 
+            local xpLabel = vgui.Create("DLabel", frame)
+            xpLabel:Dock(TOP)
+            xpLabel:DockMargin(10, 0, 10, 0)
+            xpLabel:SetText("XP:")
+
+            local xpTextEntry = vgui.Create("DTextEntry", frame)
+            xpTextEntry:Dock(TOP)
+            xpTextEntry:DockMargin(10, 0, 10, 5)
+            xpTextEntry:SetPlaceholderText("XP")
+
+            local moneyLabel = vgui.Create("DLabel", frame)
+            moneyLabel:Dock(TOP)
+            moneyLabel:DockMargin(10, 0, 10, 0)
+            moneyLabel:SetText("Money:")
+
+            local moneyTextEntry = vgui.Create("DTextEntry", frame)
+            moneyTextEntry:Dock(TOP)
+            moneyTextEntry:DockMargin(10, 0, 10, 5)
+            moneyTextEntry:SetPlaceholderText("Money")
+
             local playerPos = LocalPlayer():GetPos()
             tempXPos = math.Round(playerPos.x)
             tempYPos = math.Round(playerPos.y)
             tempZPos = math.Round(playerPos.z)
+
+            local xPosLabel = vgui.Create("DLabel", frame)
+            xPosLabel:Dock(TOP)
+            xPosLabel:DockMargin(10, 0, 10, 0)
+            xPosLabel:SetText("X Position:")
 
             local xPosTextEntry = vgui.Create("DTextEntry", frame)
             xPosTextEntry:Dock(TOP)
             xPosTextEntry:DockMargin(10, 0, 10, 5)
             xPosTextEntry:SetText(tostring(tempXPos))
 
+            local yPosLabel = vgui.Create("DLabel", frame)
+            yPosLabel:Dock(TOP)
+            yPosLabel:DockMargin(10, 0, 10, 0)
+            yPosLabel:SetText("Y Position:")
+
             local yPosTextEntry = vgui.Create("DTextEntry", frame)
             yPosTextEntry:Dock(TOP)
             yPosTextEntry:DockMargin(10, 0, 10, 5)
             yPosTextEntry:SetText(tostring(tempYPos))
+
+            local zPosLabel = vgui.Create("DLabel", frame)
+            zPosLabel:Dock(TOP)
+            zPosLabel:DockMargin(10, 0, 10, 0)
+            zPosLabel:SetText("Z Position:")
 
             local zPosTextEntry = vgui.Create("DTextEntry", frame)
             zPosTextEntry:Dock(TOP)
@@ -250,6 +307,9 @@ if (CLIENT) then
                 local xPos = tonumber(xPosTextEntry:GetText()) or 0
                 local yPos = tonumber(yPosTextEntry:GetText()) or 0
                 local zPos = tonumber(zPosTextEntry:GetText()) or 0
+                local xp = tonumber(xpTextEntry:GetText()) or 0
+                local money = tonumber(moneyTextEntry:GetText()) or 0
+
 
                 -- Check if any position component is empty and use player's current position if it is
                 if xPos == 0 and yPos == 0 and zPos == 0 then
@@ -265,17 +325,21 @@ if (CLIENT) then
                 if crateChance == nil or crateChance == "" then
                     crateChance = npcCrateChances[npcClass]
                 end
-
+                uniqueID = GetLowestAvailableID()
                 frame:Close()
 
                 local positionString = string.format('%.f, %.f, %.f', xPos, yPos, zPos)
-                local line = npcListRespawn:AddLine(uniqueID, npcClass, crateChance, timeInterval, positionString)
-                table.insert(npcDataTable, { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos })
+                local line = npcListRespawn:AddLine(uniqueID, npcClass, crateChance, timeInterval, xp, money, positionString)
+                table.insert(npcDataTable, { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos, xp = xp, money = money })
 
                 npcListRespawn:SelectItem(line)
                 removeButton:SetEnabled(true)
                 editButton:SetEnabled(true)
                 SaveNPCData()
+
+                net.Start("NPCDataUpdate")
+                net.WriteTable({ action = "add", data = npcDataTable[#npcDataTable] })
+                net.SendToServer()
             end
         end
 
@@ -295,6 +359,10 @@ if (CLIENT) then
         removeButton.DoClick = function()
             local selectedLine = npcListRespawn:GetSelectedLine()
             if selectedLine then
+                net.Start("NPCDataUpdate")
+                net.WriteTable({ action = "remove", data = npcDataTable[selectedLine] })
+                net.SendToServer()
+
                 npcListRespawn:RemoveLine(selectedLine)
                 table.remove(npcDataTable, selectedLine)
 
@@ -303,6 +371,7 @@ if (CLIENT) then
                 end
 
                 SaveNPCData()
+                
             end
         end
 
@@ -316,7 +385,7 @@ if (CLIENT) then
             if not npcData then return end
 
             local frame = vgui.Create("DFrame")
-            frame:SetSize(350, 500)
+            frame:SetSize(350, 600)
             frame:SetTitle("Edit Row")
             frame:Center()
             frame:MakePopup()
@@ -337,9 +406,9 @@ if (CLIENT) then
             local function populateNPCClassList()
                 npcClassList:Clear()
 
-                for _, npcData in pairs(npcClasses) do
-                    if string.find(string.lower(npcData.class), string.lower(npcClassSearch:GetText()), 1, true) then
-                        npcClassList:AddLine(npcData.class)
+                for npcClass, npcInfo in pairs(list.Get("NPC")) do
+                    if string.find(string.lower(npcClass), string.lower(npcClassSearch:GetText()), 1, true) then
+                        npcClassList:AddLine(npcClass)
                     end
                 end
             end
@@ -352,11 +421,30 @@ if (CLIENT) then
                 populateNPCClassList()
             end
 
+            -- Set the selected row in the NPC Class List
+            for i, npcLine in ipairs(npcClassList:GetLines()) do
+                local npcClass = npcLine:GetValue(1)
+                if npcClass == npcData.npcClass then
+                    npcClassList:SelectItem(npcLine)
+                    break
+                end
+            end
+
+            local crateChanceLabel = vgui.Create("DLabel", frame)
+            crateChanceLabel:Dock(TOP)
+            crateChanceLabel:DockMargin(10,0,10,0)
+            crateChanceLabel:SetText("Crate Chance:")
+
             local crateChanceTextEntry = vgui.Create("DTextEntry", frame)
             crateChanceTextEntry:Dock(TOP)
             crateChanceTextEntry:DockMargin(10, 0, 10, 5)
             crateChanceTextEntry:SetPlaceholderText("Crate Chance")
             crateChanceTextEntry:SetText(npcData.crateChance)
+
+            local timeIntervalLabel = vgui.Create("DLabel", frame)
+            timeIntervalLabel:Dock(TOP)
+            timeIntervalLabel:DockMargin(10,0,10,0)
+            timeIntervalLabel:SetText("Respawn Interval:")
 
             local timeIntervalTextEntry = vgui.Create("DTextEntry", frame)
             timeIntervalTextEntry:Dock(TOP)
@@ -364,17 +452,54 @@ if (CLIENT) then
             timeIntervalTextEntry:SetPlaceholderText("Time Interval")
             timeIntervalTextEntry:SetText(npcData.timeInterval)
 
+            local xpLabel = vgui.Create("DLabel", frame)
+            xpLabel:Dock(TOP)
+            xpLabel:DockMargin(10, 0, 10, 0)
+            xpLabel:SetText("XP:")
+
+            local xpTextEntry = vgui.Create("DTextEntry", frame)
+            xpTextEntry:Dock(TOP)
+            xpTextEntry:DockMargin(10, 0, 10, 5)
+            xpTextEntry:SetPlaceholderText("XP")
+            xpTextEntry:SetText(npcData.xp or 0)
+
+            local moneyLabel = vgui.Create("DLabel", frame)
+            moneyLabel:Dock(TOP)
+            moneyLabel:DockMargin(10, 0, 10, 0)
+            moneyLabel:SetText("Money:")
+
+            local moneyTextEntry = vgui.Create("DTextEntry", frame)
+            moneyTextEntry:Dock(TOP)
+            moneyTextEntry:DockMargin(10, 0, 10, 5)
+            moneyTextEntry:SetPlaceholderText("Money")
+            moneyTextEntry:SetText(npcData.money or 0)
+
+            local xPosLabel = vgui.Create("DLabel", frame)
+            xPosLabel:Dock(TOP)
+            xPosLabel:DockMargin(10, 0, 10, 0)
+            xPosLabel:SetText("X Position:")
+
             local xPosTextEntry = vgui.Create("DTextEntry", frame)
             xPosTextEntry:Dock(TOP)
             xPosTextEntry:DockMargin(10, 0, 10, 5)
             xPosTextEntry:SetText(tostring(npcData.xPos))
             xPosTextEntry:SetPlaceholderText("X Position")
 
+            local yPosLabel = vgui.Create("DLabel", frame)
+            yPosLabel:Dock(TOP)
+            yPosLabel:DockMargin(10, 0, 10, 0)
+            yPosLabel:SetText("Y Position:")
+
             local yPosTextEntry = vgui.Create("DTextEntry", frame)
             yPosTextEntry:Dock(TOP)
             yPosTextEntry:DockMargin(10, 0, 10, 5)
             yPosTextEntry:SetText(tostring(npcData.yPos))
             yPosTextEntry:SetPlaceholderText("Y Position")
+
+            local zPosLabel = vgui.Create("DLabel", frame)
+            zPosLabel:Dock(TOP)
+            zPosLabel:DockMargin(10, 0, 10, 0)
+            zPosLabel:SetText("Z Position:")
 
             local zPosTextEntry = vgui.Create("DTextEntry", frame)
             zPosTextEntry:Dock(TOP)
@@ -395,6 +520,8 @@ if (CLIENT) then
                 local xPos = tonumber(xPosTextEntry:GetText()) or 0
                 local yPos = tonumber(yPosTextEntry:GetText()) or 0
                 local zPos = tonumber(zPosTextEntry:GetText()) or 0
+                local xp = tonumber(xpTextEntry:GetText()) or npcData.xp
+                local money = tonumber(moneyTextEntry:GetText()) or npcData.money
 
                 -- Check if any position component is empty and use the existing position if it is
                 if xPos == 0 and yPos == 0 and zPos == 0 then
@@ -418,12 +545,22 @@ if (CLIENT) then
                 frame:Close()
 
                 local positionString = string.format('%.f, %.f, %.f', xPos, yPos, zPos)
-                local line = npcListRespawn:AddLine(uniqueID, npcClass, crateChance, timeInterval, positionString)
-                table.insert(npcDataTable, { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos })
+                local line = npcListRespawn:AddLine(uniqueID, npcClass, crateChance, timeInterval, xp, money, positionString)
+                table.insert(npcDataTable, { uniqueID = uniqueID, npcClass = npcClass, crateChance = crateChance, timeInterval = timeInterval, xPos = xPos, yPos = yPos, zPos = zPos, xp = xp, money = money })
 
                 SaveNPCData()
-
-                
+                npcData.uniqueID = uniqueID
+                npcData.npcClass = npcClass
+                npcData.crateChance = crateChance
+                npcData.timeInterval = timeInterval
+                npcData.xPos = xPos
+                npcData.yPos = yPos
+                npcData.zPos = zPos
+                npcData.money = money
+                npcData.xp = xp
+                net.Start("NPCDataUpdate")
+                net.WriteTable({ action = "edit", data = npcData })
+                net.SendToServer()
             end
         end
         LoadNPCData()

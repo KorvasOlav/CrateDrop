@@ -10,7 +10,6 @@ ENT.Author = "Korvas"
 function ENT:Initialize()
     if SERVER then
         -- Set up entity variables
-        -- self:SetModel("models/props_junk/wood_crate001a.mdl")
         self:SetSolid(SOLID_NONE)
         self:SetMoveType(MOVETYPE_NONE)
         self:SetNoDraw(true)
@@ -18,14 +17,12 @@ function ENT:Initialize()
         -- Assign the NPC class and crate chance
         self.NPCClass = ""
         self.CrateChance = 0
-
-        -- Spawn NPC and assign crate chance
-        -- self:SpawnNPC()
+        self.money = 0
+        self.xp = 0
 
         -- Initialize respawn timer variables
         self.RespawnEnabled = false
         self.RespawnTimer = 0
-        
     end
 end
 
@@ -38,6 +35,8 @@ function ENT:SpawnNPC()
 
     -- Assign crate chance to the NPC
     npc.CrateChance = self.CrateChance or 0
+    npc.money = self.money or 1
+    npc.xp = self.xp or 10
 
     -- Store the spawned NPC for removal when necessary
     self.SpawnedNPC = npc

@@ -14,12 +14,16 @@ ENT.RenderGroup = RENDERGROUP_OPAQUE
 
 ENT.Model = "models/hunter/blocks/cube025x025x025.mdl"
 
+
 function ENT:Initialize()
     if SERVER then
         self:SetModel(self.Model)
         self:PhysicsInit(SOLID_VPHYSICS)
         self:SetMoveType(MOVETYPE_VPHYSICS)
         self:SetSolid(SOLID_VPHYSICS)
+        self.xp = 1
+        self.money = 10
+        
         
         local phys = self:GetPhysicsObject()
         if IsValid(phys) then
@@ -76,7 +80,7 @@ local function SpawnDroppedEntity(position)
 end
 
 -- Function to give XP to the player
-local function GiveXP(ply)
+local function GiveXP(ply, xp)
     -- -- Get the current value of "wOS.ProficiencyExperience" or use 0 if it doesn't exist
     -- local currentExperience = ply:GetNW2Int("wOS.ProficiencyExperience", 0)
 
@@ -85,10 +89,10 @@ local function GiveXP(ply)
 end
 
 -- Function to give money to the player
-local function GiveMoney(ply)
+local function GiveMoney(ply, money)
     if ply.addMoney and isfunction(ply.addMoney) then
         -- Gives the player 500 money
-        ply:addMoney(500)
+        ply:addMoney(money)
     end
 end
 
@@ -97,13 +101,16 @@ function ENT:Use(activator, caller)
     -- Determine the contents of the crate
     local contents = DetermineCrateContents()
 
+    local money = self.money
+    local xp = self.xp
+
     if contents == "xp" then
         -- Give XP to the player
-        GiveXP(activator)
+        GiveXP(activator, xp)
         self:Remove()
     elseif contents == "money" then
         -- Give money to the player
-        GiveMoney(activator)
+        GiveMoney(activator, money)
         self:Remove()
     elseif contents == "entity" then
         -- Spawn the dropped entity

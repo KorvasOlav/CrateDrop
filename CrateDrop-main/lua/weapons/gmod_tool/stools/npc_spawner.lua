@@ -7,7 +7,9 @@ TOOL.ClientConVar = {
     ["npc_class"] = "",
     ["crate_chance"] = "0",
     ["respawn_enabled"] = "0", 
-    ["respawn_timer"] = "60"  
+    ["respawn_timer"] = "60",
+    ["money"] = "10",
+    ["xp"] = "1"
 }
 
 -- Add tool parameters
@@ -33,6 +35,12 @@ if CLIENT then
 
         -- Respawn Timer
         panel:NumSlider("Respawn Timer", "npc_spawner_respawn_timer", 0, 1800, 0)
+
+        -- Money
+        panel:NumSlider("Money Reward", "npc_spawner_money", 0, 500, 0)
+
+        -- XP
+        panel:NumSlider("XP Reward", "npc_spawner_xp", 0, 100, 0)
     end
 end
 
@@ -45,11 +53,12 @@ function TOOL:LeftClick(trace)
     local npcClass = self:GetClientInfo("npc_class")
     local respawnEnabled = self:GetClientNumber("respawn_enabled") == 1
     local respawnTimer = self:GetClientNumber("respawn_timer")
+    local money = self:GetClientNumber("money")
+    local xp = self:GetClientNumber("xp")
     local owner = self:GetOwner()
 
     -- Create the entity
     local ent = ents.Create("spawn_npc_stool")
-    -- print(npcClass)
     if not IsValid(ent) then return end
 
     -- Set entity variables
@@ -60,9 +69,12 @@ function TOOL:LeftClick(trace)
     -- Set tool parameters to entity variables
     ent.CrateChance = crateChance
     ent.NPCClass = npcClass
-    -- print(ent.NPCClass)
     ent.RespawnEnabled = respawnEnabled
     ent.RespawnTimer = respawnTimer
+    print(money)
+    ent.money = money
+    print(xp)
+    ent.xp = xp
     
     undo.Create("NPC Spawner")
         undo.AddEntity(ent)

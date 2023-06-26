@@ -1,4 +1,5 @@
 npcCrateChances = {}
+npcUpdates = {}
 
 if SERVER then
     local function LoadCrateChances()
@@ -41,6 +42,8 @@ if SERVER then
         local crateChance = 0
         if npc.CrateChance ~= nil then
             crateChance = npc.CrateChance
+            money = npc.money or 0
+            xp = npc.xp or 0
         else
             crateChance = npcCrateChances[npcClass] or 0
         end
@@ -51,6 +54,8 @@ if SERVER then
             local crate = ents.Create("npc_drop_crate")
             crate:SetPos(spawnPosition)
             crate:Spawn()
+            crate.money = money
+            crate.xp = xp
             npc.CrateChance = nil
         end
     end)
@@ -67,9 +72,12 @@ if SERVER then
 
     function SpawnNPCsFromTable()
         for _, npcEntry in ipairs(npcData) do
+            local uniqueID = npcEntry.uniqueID
             local npcClass = npcEntry.npcClass
             local crateChance = npcEntry.crateChance
             local timeInterval = npcEntry.timeInterval
+            local money = npcEntry.money
+            local xp = npcEntry.xp
             local xPos = npcEntry.xPos
             local yPos = npcEntry.yPos
             local zPos = npcEntry.zPos
@@ -79,8 +87,11 @@ if SERVER then
             if IsValid(npcEntity) then
                 npcEntity:SetPos(npcPosition)
                 npcEntity:Spawn()
-                npcEntity.TimeInterval = tonumber(npcEntry.timeInterval)
-                npcEntity.CrateChance = tonumber(npcEntry.crateChance)
+                npcEntity.TimeInterval = tonumber(timeInterval)
+                npcEntity.UniqueID = tonumber(uniqueID)
+                npcEntity.CrateChance = tonumber(crateChance)
+                npcEntity.money = tonumber(money)
+                npcEntity.xp = tonumber(xp)
                 npcEntity.SpawnPos = npcPosition
             end
         end
@@ -88,21 +99,134 @@ if SERVER then
 
     hook.Add("OnNPCKilled", "PersistantNPCRespawn", function(npc, attacker, inflictor)
         if npc.TimeInterval ~= nil then
-            local npcClass = npc:GetClass()
-            local crateChance = npc.CrateChance
-            local npcPosition = npc.SpawnPos
-            local timeInterval = npc.TimeInterval
+
+            
+            local uniqueID = 0
+            local npcClass = 0
+            local crateChance = 0
+            local money = 0
+            local xp = 0
+            local npcPosition = 0
+            local timeInterval = 0
+            if #npcUpdates > 0 then
+                for _, npcEntry in pairs(npcUpdates) do 
+                    if npcEntry.uniqueID == npc.UniqueID then
+                        if npcEntry.remove then 
+                            table.RemoveByValue(npcUpdates, npcEntry)
+                            return
+                        end
+                        uniqueID = tonumber(npcEntry.uniqueID)
+                        npcClass = npcEntry.npcClass
+                        crateChance = tonumber(npcEntry.crateChance)
+                        timeInterval = tonumber(npcEntry.timeInterval)
+                        money = tonumber(npcEntry.money)
+                        xp = tonumber(npcEntry.xp)
+                        xPos = npcEntry.xPos
+                        yPos = npcEntry.yPos
+                        zPos = npcEntry.zPos
+                        npcPosition = Vector(xPos, yPos, zPos)
+                    else
+                        uniqueID = npc.UniqueID
+                        npcClass = npc:GetClass()
+                        crateChance = npc.CrateChance
+                        money = npc.money
+                        xp = npc.xp
+                        npcPosition = npc.SpawnPos
+                        timeInterval = npc.TimeInterval
+                    end
+                end
+            else
+                uniqueID = npc.UniqueID
+                npcClass = npc:GetClass()
+                crateChance = npc.CrateChance
+                money = npc.money
+                xp = npc.xp
+                npcPosition = npc.SpawnPos
+                timeInterval = tonumber(npc.TimeInterval)
+            end
             timer.Simple(timeInterval, function()
                 local npcEntity = ents.Create(npcClass)
                 if IsValid(npcEntity) then
                     npcEntity:SetPos(npcPosition)
                     npcEntity:Spawn()
+                    npcEntity.UniqueID = uniqueID
                     npcEntity.TimeInterval = timeInterval
                     npcEntity.CrateChance = crateChance
+                    npcEntity.money = money
+                    npcEntity.xp = xp
                     npcEntity.SpawnPos = npcPosition
                 end
             end)
         end
     end)
-end
 
+    net.Receive("NPCDataUpdate", function(len, ply)
+        local updateData = net.ReadTable()
+        local action = updateData.action
+        local data = updateData.data
+    
+        if action == "add" then
+            HandleAddAction(data)
+        elseif action == "edit" then
+            HandleEditAction(data)
+        elseif action == "remove" then
+            HandleRemoveAction(data)
+        end
+    end)
+
+    function HandleAddAction(data)
+        if type(data) == "table" then
+            local uniqueID = data.uniqueID
+            local npcClass = data.npcClass
+            local crateChance = data.crateChance
+            local timeInterval = data.timeInterval
+            local money = data.money
+            local xp = data.xp
+            local xPos = data.xPos
+            local yPos = data.yPos
+            local zPos = data.zPos
+    
+            local npcPosition = Vector(xPos, yPos, zPos)
+            local npcEntity = ents.Create(npcClass)
+            if IsValid(npcEntity) then
+                npcEntity:SetPos(npcPosition)
+                npcEntity:Spawn()
+                npcEntity.TimeInterval = tonumber(timeInterval)
+                npcEntity.UniqueID = tonumber(uniqueID)
+                npcEntity.CrateChance = tonumber(crateChance)
+                npcEntity.money = tonumber(money)
+                npcEntity.xp = tonumber(xp)
+                npcEntity.SpawnPos = npcPosition
+            end
+        end
+    end
+    
+    function HandleEditAction(data)
+        if type(data) == "table" then
+            if #npcUpdates > 0 then
+                for i, npcEntry in ipairs(npcUpdates) do
+                    if !npcUpdates[i] then
+                        table.insert(npcUpdates, data)
+                    end
+                end
+            else
+                table.insert(npcUpdates, data)
+            end
+        end
+    end
+    
+    function HandleRemoveAction(data)
+        if type(data) == "table" then
+            data.remove = true
+            if #npcUpdates > 0 then
+                for i, npcEntry in ipairs(npcUpdates) do
+                    if !npcUpdates[i] then
+                        table.insert(npcUpdates, data)
+                    end
+                end
+            else
+                table.insert(npcUpdates, data)
+            end
+        end
+    end
+end
