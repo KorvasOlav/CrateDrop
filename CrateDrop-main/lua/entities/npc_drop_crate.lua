@@ -61,40 +61,73 @@ end
 
 local entityTable = {
     "sent_ball",
-    "item_healthcharger",
-    "item_suitcharger",
+    -- "item_healthcharger",
+    -- "item_suitcharger"
 }
 
 -- Function to spawn the entity dropped from the crate
-local function SpawnDroppedEntity(position)
+local function SpawnDroppedEntity(ply)
     -- Randomly choose an entity from the entityTable
     local randomIndex = math.random(1, #entityTable)
     local entityClass = entityTable[randomIndex]
 
-    local spawnPosition = position + Vector(0, 0, 10)
 
-    -- Spawn the chosen entity
-    local droppedEntity = ents.Create(entityClass)
-    droppedEntity:SetPos(spawnPosition)
-    droppedEntity:Spawn()
+    -- REMOVE COMMENT
+    -- wos:HandleItemPickup( ply, entityClass )
 end
 
 -- Function to give XP to the player
 local function GiveXP(ply, xp)
     -- -- Get the current value of "wOS.ProficiencyExperience" or use 0 if it doesn't exist
-    -- local currentExperience = ply:GetNW2Int("wOS.ProficiencyExperience", 0)
+    -- local currentExperience = ply:GetNW2Int("wOS.SkillExperience", 0)
 
-    -- -- Increase xp by 250
-    -- ply:SetNW2Int("wOS.ProficiencyExperience", currentExperience + 250)
+    -- -- Increase xp
+    -- ply:SetNW2Int("wOS.SkillExperience", currentExperience + xp)
 end
+
+-- Function to give XP to the player based on how much damage the player dealt
+-- local function GiveXP(ply, xp, npcDamagers)
+--     -- Get the current value of "wOS.ProficiencyExperience" or use 0 if it doesn't exist
+--     local currentExperience = ply:GetNW2Int("wOS.SkillExperience", 0)
+
+--     totalDamage = 0
+--     for _, damage in pairs(npcDamagers) do
+--         totalDamage = totalDamage + damage
+--     end
+--     local percentDamage = npcDamagers[ply] / totalDamage
+--     percentDamage = percentDamage
+
+--     xp = xp * percentDamage
+--     xp = math.Round(xp, 0)
+
+--     -- Increase xp
+--     ply:SetNW2Int("wOS.SkillExperience", currentExperience + xp)
+-- end
 
 -- Function to give money to the player
 local function GiveMoney(ply, money)
     if ply.addMoney and isfunction(ply.addMoney) then
-        -- Gives the player 500 money
         ply:addMoney(money)
     end
 end
+
+
+-- Function to give money based on how much damage the player dealt
+-- local function GiveMoney(ply, money, npcDamagers)
+--     totalDamage = 0
+--     for _, damage in pairs(npcDamagers) do
+--         totalDamage = totalDamage + damage
+--     end
+--     local percentDamage = npcDamagers[ply] / totalDamage
+--     percentDamage = percentDamage
+
+--     money = money * percentDamage
+--     money = math.Round(money, 0)
+
+--     if ply.addMoney and isfunction(ply.addMoney) then
+--         ply:addMoney(money)
+--     end
+-- end
 
 -- Function called when the crate is used
 function ENT:Use(activator, caller)
@@ -103,18 +136,32 @@ function ENT:Use(activator, caller)
 
     local money = self.money
     local xp = self.xp
+    local npcDamagers = self.npcDamagers
+    if npcDamagers[activator] and npcDamagers[activator] > 0 then
+        if contents == "entity" then
+            -- Spawn the dropped entity
+            SpawnDroppedEntity(activator)
 
-    if contents == "xp" then
-        -- Give XP to the player
-        GiveXP(activator, xp)
-        self:Remove()
-    elseif contents == "money" then
-        -- Give money to the player
-        GiveMoney(activator, money)
-        self:Remove()
-    elseif contents == "entity" then
-        -- Spawn the dropped entity
-        SpawnDroppedEntity(self:GetPos())
-        self:Remove()
+
+            -- Below check is where you would check if the player is max level. If they are max level,
+            -- we do not want them to make it to the next if check, as they cannot gain xp.
+            -- Example of what to add, should be edited to whatever your values are:
+            -- or activator.lvl == activator.hard
+        elseif contents == "money" then
+            -- Give money to the player, flat ammount to everyone
+            GiveMoney(activator, money)
+
+
+            -- Give money to the player, based on how much damage dealt
+            -- GiveMoney(activator, money, npcDamagers)
+        elseif contents == "xp" then
+            -- Give XP to the player, flat ammount to everyone
+            GiveXP(activator, xp)
+
+            
+            -- Give xp to the player, based on how much damage dealt
+            -- GiveXP(activator, xp, npcDamagers)
+        end
+        npcDamagers[activator] = nil
     end
 end

@@ -1,6 +1,8 @@
 npcCrateChances = {}
 npcUpdates = {}
 
+local crateSurviveLength = 15
+
 if SERVER then
     local function LoadCrateChances()
         if not file.Exists("crate_chances.txt", "DATA") then
@@ -36,6 +38,19 @@ if SERVER then
         end)
     end)
 
+    hook.Add("EntityTakeDamage", "PersistantNPCDamageTracking", function(target, dmgInfo)
+        if target:IsNPC() then
+            local attacker = dmgInfo:GetAttacker()
+            local damage = dmgInfo:GetDamage()
+    
+            if target.CrateChance ~= nil and attacker:IsPlayer() then
+                -- Store the damager's name and damage on the NPC entity
+                target.npcDamagers = target.npcDamagers or {}
+                target.npcDamagers[attacker] = (target.npcDamagers[attacker] or 0) + damage
+            end
+        end
+    end)
+
     -- When an NPC is killed, roll a chance to determine if a crate will drop
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
         local npcClass = npc:GetClass()
@@ -44,6 +59,7 @@ if SERVER then
             crateChance = npc.CrateChance
             money = npc.money or 0
             xp = npc.xp or 0
+            npcDamagers = npc.npcDamagers
         else
             crateChance = npcCrateChances[npcClass] or 0
         end
@@ -56,7 +72,13 @@ if SERVER then
             crate:Spawn()
             crate.money = money
             crate.xp = xp
+            crate.npcDamagers = npcDamagers
             npc.CrateChance = nil
+            timerName = npc.UniqueID .. "_crate_timer"
+
+            timer.Simple(crateSurviveLength, function()
+                crate:Remove()
+            end)
         end
     end)
 
