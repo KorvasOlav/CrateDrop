@@ -58,8 +58,7 @@ local function DetermineCrateContents()
     return nil
 end
 
-
-local entityTable = {
+local itemNames = {
     "sent_ball",
     -- "item_healthcharger",
     -- "item_suitcharger"
@@ -67,13 +66,15 @@ local entityTable = {
 
 -- Function to spawn the entity dropped from the crate
 local function SpawnDroppedEntity(ply)
-    -- Randomly choose an entity from the entityTable
-    local randomIndex = math.random(1, #entityTable)
-    local entityClass = entityTable[randomIndex]
+    -- Randomly choose an entity from the itemnames
+    local randomIndex = math.random(1, #itemnames)
+    local item = itemNames[randomIndex]
 
-
-    -- REMOVE COMMENT
-    -- wos:HandleItemPickup( ply, entityClass )
+    if wos and isfunction(wos:HandleItemPickup()) then
+        wos:HandleItemPickup( ply, item )
+    else 
+        print("wos does not exist, or HandleItemPickup() is not a function. You would have gotten " .. item)
+    end
 end
 
 -- Function to give XP to the player
@@ -108,9 +109,10 @@ end
 local function GiveMoney(ply, money)
     if ply.addMoney and isfunction(ply.addMoney) then
         ply:addMoney(money)
+    else
+        print("addMoney() is not a function. You would have gotten " .. money)
     end
 end
-
 
 -- Function to give money based on how much damage the player dealt
 -- local function GiveMoney(ply, money, npcDamagers)
