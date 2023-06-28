@@ -55,30 +55,29 @@ if SERVER then
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
         local npcClass = npc:GetClass()
         local crateChance = 0
-        if npc.CrateChance ~= nil then
+        if npc.CrateChance ~= nil and npc.CrateChance ~= 0 then
             crateChance = npc.CrateChance
             money = npc.money or 0
             xp = npc.xp or 0
             npcDamagers = npc.npcDamagers
-        else
-            crateChance = npcCrateChances[npcClass] or 0
-        end
-        -- Roll a chance based on crateChance value
-        if math.random(0, 100) <= crateChance then
-            local spawnPosition = npc:GetPos() + Vector(0, 0, 10)
-    
-            local crate = ents.Create("npc_drop_crate")
-            crate:SetPos(spawnPosition)
-            crate:Spawn()
-            crate.money = money
-            crate.xp = xp
-            crate.npcDamagers = npcDamagers
-            npc.CrateChance = nil
-            timerName = npc.UniqueID .. "_crate_timer"
 
-            timer.Simple(crateSurviveLength, function()
-                crate:Remove()
-            end)
+            -- Roll a chance based on crateChance value
+            if math.random(1, 100) <= crateChance then
+                local spawnPosition = npc:GetPos() + Vector(0, 0, 10)
+        
+                local crate = ents.Create("npc_drop_crate")
+                crate:SetPos(spawnPosition)
+                crate:Spawn()
+                crate.money = money
+                crate.xp = xp
+                crate.npcDamagers = npcDamagers
+                npc.CrateChance = nil
+                timerName = npc.UniqueID .. "_crate_timer"
+
+                timer.Simple(crateSurviveLength, function()
+                    crate:Remove()
+                end)
+            end
         end
     end)
 
@@ -121,8 +120,6 @@ if SERVER then
 
     hook.Add("OnNPCKilled", "PersistantNPCRespawn", function(npc, attacker, inflictor)
         if npc.TimeInterval ~= nil then
-
-            
             local uniqueID = 0
             local npcClass = 0
             local crateChance = 0
