@@ -12,23 +12,17 @@ ENT.Spawnable = false
 ENT.AdminOnly = true
 ENT.RenderGroup = RENDERGROUP_OPAQUE
 
-ENT.Model = "models/hunter/blocks/cube025x025x025.mdl"
+ENT.Model = "models/starwars/syphadias/props/sw_tor/bioware_ea/items/harvesting/slicing/slicing_safeboxes_panel.mdl"
 
 
 function ENT:Initialize()
     if SERVER then
         self:SetModel(self.Model)
-        self:PhysicsInit(SOLID_VPHYSICS)
         self:SetMoveType(MOVETYPE_VPHYSICS)
-        self:SetSolid(SOLID_VPHYSICS)
+        self:SetSolid(SOLID_OBB)
+        self:SetModelScale(1.5)
         self.xp = 1
-        self.money = 10
-        
-        
-        local phys = self:GetPhysicsObject()
-        if IsValid(phys) then
-            phys:Wake()
-        end
+        self.money = 1
     end
 end
 
@@ -58,32 +52,31 @@ local function DetermineCrateContents()
     return nil
 end
 
-local itemNames = {
-    "sent_ball",
-    -- "item_healthcharger",
-    -- "item_suitcharger"
-}
-
 -- Function to spawn the entity dropped from the crate
-local function SpawnDroppedEntity(ply)
-    -- Randomly choose an entity from the itemnames
-    local randomIndex = math.random(1, #itemnames)
+local function SpawnDroppedEntity(ply, itemNames)
+    -- Randomly choose an entity from the itemNames
+    local randomIndex = math.random(1, #itemNames)
     local item = itemNames[randomIndex]
 
-    if wos and isfunction(wos:HandleItemPickup()) then
-        wos:HandleItemPickup( ply, item )
+    if wOS and isfunction(wOS:HandleItemPickup()) then
+        -- UNCOMMENT WHEN ITEM LIST IS SET PROPERLY
+        -- wOS:HandleItemPickup( ply, item )
     else 
-        print("wos does not exist, or HandleItemPickup() is not a function. You would have gotten " .. item)
+        print("wOS does not exist, or HandleItemPickup() is not a function. You would have gotten " .. item)
     end
 end
 
 -- Function to give XP to the player
 local function GiveXP(ply, xp)
-    -- -- Get the current value of "wOS.ProficiencyExperience" or use 0 if it doesn't exist
-    -- local currentExperience = ply:GetNW2Int("wOS.SkillExperience", 0)
+    if wOS then
+        -- Get the current value of "wOS.ProficiencyExperience" or use 0 if it doesn't exist
+        local currentExperience = ply:GetNW2Int("wOS.SkillExperience", 0)
 
-    -- -- Increase xp
-    -- ply:SetNW2Int("wOS.SkillExperience", currentExperience + xp)
+        -- Increase xp
+        ply:SetNW2Int("wOS.SkillExperience", currentExperience + xp)
+    else
+        print("wOS does not exist. You would have gotten " .. xp .. " xp")
+    end
 end
 
 -- Function to give XP to the player based on how much damage the player dealt
@@ -110,9 +103,10 @@ local function GiveMoney(ply, money)
     if ply.addMoney and isfunction(ply.addMoney) then
         ply:addMoney(money)
     else
-        print("addMoney() is not a function. You would have gotten " .. money)
+        print("addMoney() is not a function. You would have gotten " .. money .. " money")
     end
 end
+
 
 -- Function to give money based on how much damage the player dealt
 -- local function GiveMoney(ply, money, npcDamagers)
@@ -142,7 +136,7 @@ function ENT:Use(activator, caller)
     if npcDamagers[activator] and npcDamagers[activator] > 0 then
         if contents == "entity" then
             -- Spawn the dropped entity
-            SpawnDroppedEntity(activator)
+            SpawnDroppedEntity(activator, self.ItemDrops)
 
 
             -- Below check is where you would check if the player is max level. If they are max level,
@@ -154,14 +148,14 @@ function ENT:Use(activator, caller)
             GiveMoney(activator, money)
 
 
-            -- Give money to the player, based on how much damage dealt
+            -- -- Give money to the player, based on how much damage dealt
             -- GiveMoney(activator, money, npcDamagers)
         elseif contents == "xp" then
             -- Give XP to the player, flat ammount to everyone
             GiveXP(activator, xp)
 
             
-            -- Give xp to the player, based on how much damage dealt
+            -- -- Give xp to the player, based on how much damage dealt
             -- GiveXP(activator, xp, npcDamagers)
         end
         npcDamagers[activator] = nil

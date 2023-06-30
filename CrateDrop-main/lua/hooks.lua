@@ -51,33 +51,49 @@ if SERVER then
         end
     end)
 
+    local dropGroupsData = {}
+    local function updateDropData()
+        local dropGroupsDataJSON = file.Read("drop_groups.txt", "DATA")
+        if dropGroupsDataJSON then
+            dropGroupsData = util.JSONToTable(dropGroupsDataJSON)
+        end
+    end
+
     -- When an NPC is killed, roll a chance to determine if a crate will drop
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
+        local itemDrops = {}
+        updateDropData()
+        for _, dropItems in ipairs(dropGroupsData) do
+            if dropItems.groupName == npc.dropGroup then
+                itemDrops = dropItems.dropList
+            end
+        end
         local npcClass = npc:GetClass()
         local crateChance = 0
-        if npc.CrateChance ~= nil and npc.CrateChance ~= 0 then
+        if npc.CrateChance ~= nil then
             crateChance = npc.CrateChance
             money = npc.money or 0
             xp = npc.xp or 0
             npcDamagers = npc.npcDamagers
+        else
+            crateChance = npcCrateChances[npcClass] or 0
+        end
+        -- Roll a chance based on crateChance value
+        if math.random(0, 100) <= crateChance then
+            local spawnPosition = npc:GetPos() + Vector(0, 0, 3)
+    
+            local crate = ents.Create("npc_drop_crate")
+            crate:SetPos(spawnPosition)
+            crate:Spawn()
+            crate.money = money
+            crate.xp = xp
+            crate.npcDamagers = npcDamagers
+            crate.ItemDrops = itemDrops
+            npc.CrateChance = nil
 
-            -- Roll a chance based on crateChance value
-            if math.random(1, 100) <= crateChance then
-                local spawnPosition = npc:GetPos() + Vector(0, 0, 10)
-        
-                local crate = ents.Create("npc_drop_crate")
-                crate:SetPos(spawnPosition)
-                crate:Spawn()
-                crate.money = money
-                crate.xp = xp
-                crate.npcDamagers = npcDamagers
-                npc.CrateChance = nil
-                timerName = npc.UniqueID .. "_crate_timer"
-
-                timer.Simple(crateSurviveLength, function()
-                    crate:Remove()
-                end)
-            end
+            timer.Simple(crateSurviveLength, function()
+                crate:Remove()
+            end)
         end
     end)
 
@@ -102,6 +118,7 @@ if SERVER then
             local xPos = npcEntry.xPos
             local yPos = npcEntry.yPos
             local zPos = npcEntry.zPos
+            local dropGroup = npcEntry.dropGroup
     
             local npcPosition = Vector(xPos, yPos, zPos)
             local npcEntity = ents.Create(npcClass)
@@ -114,12 +131,15 @@ if SERVER then
                 npcEntity.money = tonumber(money)
                 npcEntity.xp = tonumber(xp)
                 npcEntity.SpawnPos = npcPosition
+                npcEntity.dropGroup = dropGroup
             end
         end
     end
 
     hook.Add("OnNPCKilled", "PersistantNPCRespawn", function(npc, attacker, inflictor)
         if npc.TimeInterval ~= nil then
+
+            
             local uniqueID = 0
             local npcClass = 0
             local crateChance = 0
@@ -127,6 +147,7 @@ if SERVER then
             local xp = 0
             local npcPosition = 0
             local timeInterval = 0
+            local dropGroup = 0
             if #npcUpdates > 0 then
                 for _, npcEntry in pairs(npcUpdates) do 
                     if npcEntry.uniqueID == npc.UniqueID then
@@ -144,6 +165,7 @@ if SERVER then
                         yPos = npcEntry.yPos
                         zPos = npcEntry.zPos
                         npcPosition = Vector(xPos, yPos, zPos)
+                        dropGroup = npcEntry.dropGroup
                     else
                         uniqueID = npc.UniqueID
                         npcClass = npc:GetClass()
@@ -152,6 +174,7 @@ if SERVER then
                         xp = npc.xp
                         npcPosition = npc.SpawnPos
                         timeInterval = npc.TimeInterval
+                        dropGroup = npc.dropGroup
                     end
                 end
             else
@@ -162,6 +185,7 @@ if SERVER then
                 xp = npc.xp
                 npcPosition = npc.SpawnPos
                 timeInterval = tonumber(npc.TimeInterval)
+                dropGroup = npc.dropGroup
             end
             timer.Simple(timeInterval, function()
                 local npcEntity = ents.Create(npcClass)
@@ -174,6 +198,7 @@ if SERVER then
                     npcEntity.money = money
                     npcEntity.xp = xp
                     npcEntity.SpawnPos = npcPosition
+                    npcEntity.dropGroup = dropGroup
                 end
             end)
         end
@@ -204,6 +229,7 @@ if SERVER then
             local xPos = data.xPos
             local yPos = data.yPos
             local zPos = data.zPos
+            local dropGroup = data.dropGroup
     
             local npcPosition = Vector(xPos, yPos, zPos)
             local npcEntity = ents.Create(npcClass)
@@ -216,6 +242,7 @@ if SERVER then
                 npcEntity.money = tonumber(money)
                 npcEntity.xp = tonumber(xp)
                 npcEntity.SpawnPos = npcPosition
+                npcEntity.dropGroup = dropGroup
             end
         end
     end

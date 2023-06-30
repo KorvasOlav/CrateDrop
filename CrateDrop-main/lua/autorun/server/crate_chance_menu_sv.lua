@@ -6,21 +6,12 @@ concommand.Add("npcmenu", function(ply)
     net.Send(ply)
 end)
 
--- function GetNPCClasses()
---     local npcClasses = {}
---     for npcClass, npcInfo in pairs(list.Get("NPC")) do
---         table.insert(npcClasses, {
---             class = npcClass,
---             name = npcInfo.Name or npcClass,
---             category = npcInfo.Category or "Unknown"
---         })
---     end
---     return npcClasses
--- end
+
 
 if ( SERVER ) then
     util.AddNetworkString("OpenNPCMenu")
     util.AddNetworkString("SetNPCCrateChance")
+    util.AddNetworkString("SaveNPCCrateChance")
     util.AddNetworkString("GetNPCCrateChance")
     util.AddNetworkString("Cratedrop_ViewNPCSpawnLocations")
     util.AddNetworkString("NPCDataUpdate")
@@ -50,7 +41,7 @@ if ( SERVER ) then
         net.Send(ply)
     end)
 
-    net.Receive("SetNPCCrateChance", function(_, ply)
+    net.Receive("SaveNPCCrateChance", function(_, ply)
         local selectedNPCClass = net.ReadString()
         local newValue = net.ReadInt(32)
         npcCrateChances[selectedNPCClass] = newValue
