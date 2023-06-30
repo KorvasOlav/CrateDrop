@@ -61,6 +61,7 @@ if SERVER then
 
     -- When an NPC is killed, roll a chance to determine if a crate will drop
     hook.Add("OnNPCKilled", "NPCDropCrate", function(npc, attacker, inflictor)
+        if npc.CrateChance == nil or npc.CrateChance == 0 then return end
         local itemDrops = {}
         updateDropData()
         for _, dropItems in ipairs(dropGroupsData) do
@@ -79,7 +80,7 @@ if SERVER then
             crateChance = npcCrateChances[npcClass] or 0
         end
         -- Roll a chance based on crateChance value
-        if math.random(0, 100) <= crateChance then
+        if math.random(1, 100) <= crateChance then
             local spawnPosition = npc:GetPos() + Vector(0, 0, 3)
     
             local crate = ents.Create("npc_drop_crate")
@@ -137,9 +138,7 @@ if SERVER then
     end
 
     hook.Add("OnNPCKilled", "PersistantNPCRespawn", function(npc, attacker, inflictor)
-        if npc.TimeInterval ~= nil then
-
-            
+        if npc.TimeInterval ~= nil and npc.TimeInterval ~= 0 then
             local uniqueID = 0
             local npcClass = 0
             local crateChance = 0
